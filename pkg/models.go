@@ -7,6 +7,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+const COIN uint64 = 100000000
+
 type Block struct {
 	Hash       string `json:"hash"`
 	Height     uint   `json:"height"`
@@ -94,8 +96,20 @@ type BlockMeta struct {
 }
 
 // Return block reward at the given height
-func GetBlockReward(height uint) uint {
-	return 50e8 >> (height / 210000)
+func GetBlockReward(height uint) (subsidy uint64) {
+	subsidy = 5000 * COIN
+	halvingInterval := uint64(950000)
+	halvings := uint64(0)
+	if height >= 100000 {
+		halvings = (uint64(height) - 100000) / halvingInterval
+		subsidy /= 5
+	}
+
+	subsidy >>= halvings
+	if subsidy < 1*COIN {
+		subsidy = 1 * COIN
+	}
+	return
 }
 
 // Return block hash for the given height
