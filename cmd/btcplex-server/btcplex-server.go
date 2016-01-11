@@ -12,8 +12,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 	"sync"
+	"time"
 
 	"github.com/codegangsta/martini"
 	"github.com/codegangsta/martini-contrib/binding"
@@ -46,9 +46,9 @@ type pageMeta struct {
 	Error          string
 	Price          float64
 	PaginationData *PaginationData
-	Analytics		string
-	BtcplexSynced   bool
-	BitcoindInfo *btcplex.BitcoindInfo
+	Analytics      string
+	BtcplexSynced  bool
+	BitcoindInfo   *btcplex.BitcoindInfo
 }
 
 type PaginationData struct {
@@ -66,15 +66,15 @@ type RedisWrapper struct {
 const (
 	ratelimitwindow = 3600
 	ratelimitcnt    = 3600
-	txperpage = 20
-	synctimeout = 60 * 8
+	txperpage       = 20
+	synctimeout     = 60 * 8
 )
 
-var conf *btcplex.Config;
+var conf *btcplex.Config
 
 // Keep track of the number of active SSE client
-var activeclientsmutex sync.Mutex;
-var activeclients uint;
+var activeclientsmutex sync.Mutex
+var activeclients uint
 
 func incrementClient() {
 	activeclientsmutex.Lock()
@@ -219,7 +219,7 @@ Options:
 			if uint(latestheightcache) != bitcoindheight && !checkinprogress && btcplexsynced {
 				checkinprogress = true
 				go func(checkinprogress *bool) {
-					if bitcoindheight - uint(latestheightcache) > 20 {
+					if bitcoindheight-uint(latestheightcache) > 20 {
 						btcplexsynced = false
 						log.Printf("CRITICAL: OUT OF SYNC / btcplex:%v, bitcoind:%v\n", latestheightcache, bitcoindheight)
 					} else {
@@ -278,7 +278,7 @@ Options:
 		"generationmsg": func(tx *btcplex.Tx) string {
 			reward := btcplex.GetBlockReward(tx.BlockHeight)
 			fee := float64(tx.TotalOut-uint64(reward)) / 1e8
-			return fmt.Sprintf("%v BTC + %.8f total fees", float64(reward)/1e8, fee)
+			return fmt.Sprintf("%v MAZA + %.8f total fees", float64(reward)/1e8, fee)
 		},
 		"tobtc": func(val uint64) string {
 			return fmt.Sprintf("%.8f", float64(val)/1e8)
@@ -585,9 +585,9 @@ Options:
 		r.JSON(200, latestheight)
 	})
 
-//	m.Get("/api/latesthash", func(r render.Render) {
-//		r.JSON(200, latesthash)
-//	})
+	//	m.Get("/api/latesthash", func(r render.Render) {
+	//		r.JSON(200, latesthash)
+	//	})
 
 	m.Get("/api/getblockhash/:height", func(r render.Render, params martini.Params, db *redis.Pool) {
 		height, _ := strconv.ParseUint(params["height"], 10, 0)
@@ -678,7 +678,7 @@ Options:
 				}
 			}
 		}(rpool, utxs)
-		
+
 		var ls string
 		for {
 			if running {
@@ -828,7 +828,7 @@ Options:
 			}
 		}
 	})
-	
+
 	m.Get("/api/info", func(r render.Render) {
 		activeclientsmutex.Lock()
 		defer activeclientsmutex.Unlock()
