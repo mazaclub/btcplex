@@ -36,58 +36,26 @@ type Block struct {
 }
 
 type Tx struct {
-	Hash        string   `json:"hash"`
-	Index       uint32   `json:"-"`
-	Size        uint32   `json:"size"`
-	LockTime    uint32   `json:"lock_time"`
-	Version     uint32   `json:"ver"`
-	TxInCnt     uint32   `json:"vin_sz"`
-	TxOutCnt    uint32   `json:"vout_sz"`
-	TxIns       []*TxIn  `json:"in" bson:"-"`
-	TxOuts      []*TxOut `json:"out" bson:"-"`
-	TotalOut    uint64   `json:"vout_total"`
-	TotalIn     uint64   `json:"vin_total"`
-	BlockHash   string   `json:"block_hash"`
-	BlockHeight uint     `json:"block_height"`
-	BlockTime   uint32   `json:"block_time"`
-}
-
-type TxOut struct {
-	TxHash    string    `json:"-"`
-	BlockHash string    `json:"-"`
-	BlockTime uint32    `json:"-"`
-	Addr      string    `json:"hash"`
-	Value     uint64    `json:"value"`
-	Index     uint32    `json:"n"`
-	Spent     *TxoSpent `json:"spent,omitempty"`
+	Hash        string           `json:"hash"`
+	Index       uint32           `json:"-"`
+	Size        uint32           `json:"size"`
+	LockTime    uint32           `json:"lock_time"`
+	Version     uint32           `json:"ver"`
+	TxInCnt     uint32           `json:"vin_sz"`
+	TxOutCnt    uint32           `json:"vout_sz"`
+	TxIns       []*btcplex.TxIn  `json:"in" bson:"-"`
+	TxOuts      []*btcplex.TxOut `json:"out" bson:"-"`
+	TotalOut    uint64           `json:"vout_total"`
+	TotalIn     uint64           `json:"vin_total"`
+	BlockHash   string           `json:"block_hash"`
+	BlockHeight uint             `json:"block_height"`
+	BlockTime   uint32           `json:"block_time"`
 }
 
 type TxOutCached struct {
 	Id    string `json:"id"`
 	Addr  string `json:"hash"`
 	Value uint64 `json:"value"`
-}
-
-type PrevOut struct {
-	Hash    string `json:"hash"`
-	Vout    uint32 `json:"n"`
-	Address string `json:"address"`
-	Value   uint64 `json:"value"`
-}
-
-type TxIn struct {
-	TxHash    string   `json:"-"`
-	BlockHash string   `json:"-"`
-	BlockTime uint32   `json:"-"`
-	PrevOut   *PrevOut `json:"prev_out"`
-	Index     uint32   `json:"n"`
-}
-
-type TxoSpent struct {
-	Spent       bool   `json:"spent"`
-	BlockHeight uint32 `json:"block_height"`
-	InputHash   string `json:"tx_hash"`
-	InputIndex  uint32 `json:"in_index"`
 }
 
 var wg, txwg sync.WaitGroup
@@ -253,8 +221,8 @@ func main() {
 			total_tx_in := uint64(0)
 
 			//conn.Send("MULTI")
-			txos := []*TxOut{}
-			txis := []*TxIn{}
+			txos := []*btcplex.TxOut{}
+			txis := []*btcplex.TxIn{}
 
 			for txo_index, txo := range tx.TxOuts {
 				txwg.Add(1)
@@ -269,14 +237,14 @@ func main() {
 					atomic.AddUint64(total_tx_out, uint64(txo.Value))
 					//atomic.AddUint32(txos_cnt, 1)
 
-					ntxo := new(TxOut)
+					ntxo := new(btcplex.TxOut)
 					ntxo.TxHash = tx.Hash
 					ntxo.BlockHash = bl.Hash
 					ntxo.BlockTime = bl.BlockTime
 					ntxo.Addr = txo.Addr
 					ntxo.Value = txo.Value
 					ntxo.Index = uint32(txo_index)
-					txospent := new(TxoSpent)
+					txospent := new(btcplex.TxoSpent)
 					ntxo.Spent = txospent
 					ntxocached := new(TxOutCached)
 					ntxocached.Addr = txo.Addr
@@ -317,12 +285,12 @@ func main() {
 						}()
 						defer txwg.Done()
 
-						ntxi := new(TxIn)
+						ntxi := new(btcplex.TxIn)
 						ntxi.TxHash = tx.Hash
 						ntxi.BlockHash = bl.Hash
 						ntxi.BlockTime = bl.BlockTime
 						ntxi.Index = uint32(txi_index)
-						nprevout := new(PrevOut)
+						nprevout := new(btcplex.PrevOut)
 						nprevout.Vout = txi.InputVout
 						nprevout.Hash = txi.InputHash
 						ntxi.PrevOut = nprevout
@@ -345,7 +313,7 @@ func main() {
 								log.Printf("KEY:%v\n", fmt.Sprintf("txo:%v:%v", txi.InputHash, txi.InputVout))
 								panic(err)
 							}
-							prevtxoredis := new(TxOut)
+							prevtxoredis := new(btcplex.TxOut)
 							json.Unmarshal([]byte(prevtxoredisjson), prevtxoredis)
 
 							prevtxo.Addr = prevtxoredis.Addr
@@ -358,7 +326,7 @@ func main() {
 						nprevout.Address = prevtxo.Addr
 						nprevout.Value = prevtxo.Value
 
-						txospent := new(TxoSpent)
+						txospent := new(btcplex.TxoSpent)
 						txospent.Spent = true
 						txospent.BlockHeight = uint32(block_height)
 						txospent.InputHash = tx.Hash
